@@ -18,7 +18,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 # sys.path.append("/home/lr/faza.thirafi/raid/repository-kenkyuu-models/2024_paper/ex_tools/contrastive_active_learning")
 # print(sys.path)
 
-from utilities.data_loader import get_glue_tensor_dataset
+from utilities.data_loader import get_glue_tensor_dataset, get_fc_tensor_dataset 
 from utilities.preprocessors import processors
 from utilities.trainers import my_evaluate
 
@@ -26,9 +26,6 @@ from utilities.trainers import my_evaluate
 
 
 logger = logging.getLogger(__name__)
-
-
-
 
 def contrastive_acquisition(args, annotations_per_iteration, X_original, y_original,
                             labeled_inds, candidate_inds, discarded_inds, original_inds,
@@ -81,7 +78,7 @@ def contrastive_acquisition(args, annotations_per_iteration, X_original, y_origi
         model = train_results['model']
 
     if args.bert_score:  # BERT score representations (ablation)
-        train_dataset = get_glue_tensor_dataset(labeled_inds, args, args.task_name, tokenizer, train=True)
+        train_dataset = get_fc_tensor_dataset(labeled_inds, args, args.task_name, tokenizer, train=True)
         _train_results, train_logits = my_evaluate(train_dataset, args, model, prefix="",
                                                    al_test=False, mc_samples=None,
                                                    return_mean_embs=args.mean_embs,
@@ -135,7 +132,7 @@ def contrastive_acquisition(args, annotations_per_iteration, X_original, y_origi
 
     elif args.tfidf and args.cls:  # Half neighbourhood with tfidf - half with cls embs (ablation)
         if train_dataset is None:
-            train_dataset = get_glue_tensor_dataset(labeled_inds, args, args.task_name, tokenizer, train=True)
+            train_dataset = get_fc_tensor_dataset(labeled_inds, args, args.task_name, tokenizer, train=True)
         _train_results, train_logits = my_evaluate(train_dataset, args, model, prefix="",
                                                    al_test=False, mc_samples=None,
                                                    return_mean_embs=args.mean_embs,
@@ -145,7 +142,7 @@ def contrastive_acquisition(args, annotations_per_iteration, X_original, y_origi
         dtrain_tfidf = tfidf_dtrain_reprs
         dpool_tfidf = tfidf_dpool_reprs
 
-        embs = 'bert_cls'
+        embs = 'bart_cls'
         dtrain_cls = normalize(_train_results[embs]).detach().cpu()
         dpool_cls = normalize(results_dpool[embs]).detach().cpu()
 
@@ -165,6 +162,7 @@ def contrastive_acquisition(args, annotations_per_iteration, X_original, y_origi
 
             criterion = nn.KLDivLoss(reduction='none') if not args.ce else nn.CrossEntropyLoss()
         
+
             kl_scores = []
             num_adv = 0
             distances = []
@@ -251,7 +249,7 @@ def contrastive_acquisition(args, annotations_per_iteration, X_original, y_origi
 
     else:  # standard method
         if train_dataset is None:
-            train_dataset = get_glue_tensor_dataset(labeled_inds, args, args.task_name, tokenizer, train=True)
+            train_dataset = get_fc_tensor_dataset(labeled_inds, args, args.task_name, tokenizer, train=True)
         _train_results, train_logits = my_evaluate(train_dataset, args, model, prefix="",
                                                    al_test=False, mc_samples=None,
                                                    return_mean_embs=args.mean_embs,
@@ -269,8 +267,8 @@ def contrastive_acquisition(args, annotations_per_iteration, X_original, y_origi
         else:
             # Use representations of current fine-tuned model *CAL*
             if args.mean_embs and args.cls:
-                dtrain_reprs = torch.cat((_train_results['bert_mean_inputs'], _train_results['bert_cls']), dim=1)
-                dpool_reprs = torch.cat((results_dpool['bert_mean_inputs'], results_dpool['bert_cls']), dim=1)
+                dtrain_reprs = torch.cat((_train_results['bert_mean_inputs'], _train_results['bart_cls']), dim=1)
+                dpool_reprs = torch.cat((results_dpool['bert_mean_inputs'], results_dpool['bart_cls']), dim=1)
             elif args.mean_embs:
                 embs = 'bert_mean_inputs'
                 dtrain_reprs = _train_results[embs]
@@ -280,7 +278,7 @@ def contrastive_acquisition(args, annotations_per_iteration, X_original, y_origi
                 dtrain_reprs = _train_results[embs]
                 dpool_reprs = results_dpool[embs]
             elif args.cls:
-                embs = 'bert_cls'
+                embs = 'bart_cls'
                 dtrain_reprs = _train_results[embs]
                 dpool_reprs = results_dpool[embs]
             else:

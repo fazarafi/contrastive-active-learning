@@ -166,6 +166,18 @@ def al_loop(args):
             with open(os.path.join(args.data_dir, "bert_representations.pkl"), 'wb') as handle:
                 pickle.dump(bert_representations, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+    # TODO FT
+    ##############################################################
+    # Get Graph representations
+    ##############################################################
+    graph_represetntations = None
+    
+    if args.graph:
+        print("use_graph")
+        labels = ""
+
+    
+    
     ##############################################################
     # Get TFIDF representations
     ##############################################################
@@ -747,6 +759,13 @@ if __name__ == '__main__':
     parser.add_argument("-server", "--server", required=False, default='ford',
                         help="server on which this experiment runs")
     # parser.add_argument("--debug", required=False, default=False, help="debug mode")
+
+    
+    #####
+    # TODO FT Additional Args
+    ####
+    parser.add_argument("--graph", default=False, type=bool, help="if True use graph scores")
+    
 
     args = parser.parse_args()
 

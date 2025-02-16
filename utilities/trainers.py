@@ -617,6 +617,11 @@ def my_evaluate(eval_dataset, args, model, prefix="", al_test=False, mc_samples=
                     if hasattr(args, 'acquisition') or return_cls:
                         if return_cls or return_mean_output:
                             bert_output, bert_output_cls = model.bert(**inputs)
+                            print("AAAA")
+                            print("DEBUG FT> inputs", inputs)
+                            print("DEBUG FT> bert_output_cls", bert_output_cls[0])
+                            print("DEBUG FT> bert_output", bert_output[0])
+                            print("DEBUG FT> bert_output type", str(type(bert_output)))
                             bert_mean_output = torch.mean(bert_output, dim=1)
                         if return_mean_embs:
                             bert_input = model.bert.embeddings(inputs['input_ids'])
